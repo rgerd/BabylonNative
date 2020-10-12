@@ -1457,13 +1457,17 @@ namespace Babylon
         const auto width = info[2].As<Napi::Number>().FloatValue();
         const auto height = info[3].As<Napi::Number>().FloatValue();
 
-        const auto backbufferWidth = bgfx::getStats()->width;
-        const auto backbufferHeight = bgfx::getStats()->height;
+        auto& backBuffer = m_frameBufferManager.GetBound();
+        const bool isDefault = backBuffer.IsDefaultBackBuffer();
+        const auto backbufferWidth = isDefault ? bgfx::getStats()->width : backBuffer.Width;
+        const auto backbufferHeight = isDefault ? bgfx::getStats()->height : backBuffer.Height;
         const float yOrigin = bgfx::getCaps()->originBottomLeft ? y : (1.f - y - height);
 
-        m_frameBufferManager.GetBound().UseViewId(m_frameBufferManager.GetNewViewId());
-        const bgfx::ViewId viewId = m_frameBufferManager.GetBound().ViewId;
-        bgfx::setViewFrameBuffer(viewId, m_frameBufferManager.GetBound().FrameBuffer);
+        if (backBuffer.NeedsViewId())
+            backBuffer.UseViewId(m_frameBufferManager.GetNewViewId());
+
+        const bgfx::ViewId viewId = backBuffer.ViewId;
+        bgfx::setViewFrameBuffer(viewId, backBuffer.FrameBuffer);
         bgfx::setViewRect(viewId,
             static_cast<uint16_t>(x * backbufferWidth),
             static_cast<uint16_t>(yOrigin * backbufferHeight),
