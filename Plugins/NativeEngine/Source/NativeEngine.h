@@ -161,6 +161,7 @@ namespace Babylon
             bgfx::setViewClear(m_viewId, m_clearState.Flags, m_clearState.Color(), m_clearState.Depth, m_clearState.Stencil);
             // discard any previous set state
             bgfx::discard();
+            bgfx::touch(m_viewId);
         }
 
         uint16_t m_viewId{};
@@ -234,12 +235,13 @@ namespace Babylon
     {
         FrameBufferManager()
         {
-            m_boundFrameBuffer = m_backBuffer = new FrameBufferData(BGFX_INVALID_HANDLE, GetNewViewId(), bgfx::getStats()->width, bgfx::getStats()->height);
+            m_backBuffer = CreateNew(BGFX_INVALID_HANDLE, bgfx::getStats()->width, bgfx::getStats()->height, true);
+            Bind(m_backBuffer);
         }
 
-        FrameBufferData* CreateNew(bgfx::FrameBufferHandle frameBufferHandle, uint16_t width, uint16_t height)
+        FrameBufferData* CreateNew(bgfx::FrameBufferHandle frameBufferHandle, uint16_t width, uint16_t height, bool actAsBackBuffer = false)
         {
-            return new FrameBufferData(frameBufferHandle, GetNewViewId(), width, height);
+            return new FrameBufferData(frameBufferHandle, GetNewViewId(), width, height, actAsBackBuffer);
         }
 
         FrameBufferData* CreateNew(bgfx::FrameBufferHandle frameBufferHandle, ClearState& clearState, uint16_t width, uint16_t height, bool actAsBackBuffer)
@@ -251,9 +253,13 @@ namespace Babylon
         {
             m_boundFrameBuffer = data;
 
-            // TODO: Consider doing this only on bgfx::reset(); the effects of this call don't survive reset, but as
-            // long as there's no reset this doesn't technically need to be called every time the frame buffer is bound.
-            m_boundFrameBuffer->SetUpView(GetNewViewId());
+            const bool firstBindInFrame = m_frameBufferHandles.count(m_boundFrameBuffer->FrameBuffer.idx) == 0;
+            const auto viewId = firstBindInFrame ? GetNewViewId() : m_boundFrameBuffer->ViewId;
+            if (firstBindInFrame)
+            {
+                m_frameBufferHandles.insert(m_boundFrameBuffer->FrameBuffer.idx);
+                m_boundFrameBuffer->SetUpView(viewId);
+            }
 
             // bgfx::setTexture()? Why?
             // TODO: View order?
@@ -268,10 +274,8 @@ namespace Babylon
         void Unbind(FrameBufferData* data)
         {
             // this assert is commented because of an issue with XR described here : https://github.com/BabylonJS/BabylonNative/issues/344
-            //assert(m_boundFrameBuffer == data);
-            (void)data;
-            m_boundFrameBuffer = m_backBuffer;
-            m_renderingToTarget = false;
+            assert(m_boundFrameBuffer == data);
+            Bind(m_backBuffer);
         }
 
         uint16_t GetNewViewId()
@@ -284,16 +288,24 @@ namespace Babylon
         void Reset()
         {
             m_nextId = 0;
+            m_frameBufferHandles.clear();
+            Unbind(m_boundFrameBuffer);
         }
 
-        bool IsRenderingToTarget() const
+        inline bool IsRenderingToTarget() const
         {
             return m_renderingToTarget;
+        }
+
+        inline bool IsRenderingToDefault() const
+        {
+            return m_boundFrameBuffer == m_backBuffer;
         }
 
     private:
         FrameBufferData* m_boundFrameBuffer{nullptr};
         FrameBufferData* m_backBuffer{nullptr};
+        std::unordered_set<uint16_t> m_frameBufferHandles{};
         uint16_t m_nextId{0};
         bool m_renderingToTarget{false};
     };
