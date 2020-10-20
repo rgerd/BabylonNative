@@ -170,8 +170,8 @@ namespace Babylon
     struct FrameBufferData final
     {
     private:
-        std::unique_ptr<ClearState> m_clearState{};
         arcana::weak_table<FrameBufferData*>::ticket m_managerTicket;
+        std::unique_ptr<ClearState> m_clearState{};
 
     public:
         FrameBufferData(bgfx::FrameBufferHandle frameBuffer, arcana::weak_table<FrameBufferData*>& managerTable, uint16_t width, uint16_t height, bool actAsBackBuffer = false)
@@ -268,6 +268,7 @@ namespace Babylon
 
         void Unbind(FrameBufferData* data)
         {
+            (void)data;
             assert(m_boundFrameBuffer == data);
             Bind(m_backBuffer);
         }
