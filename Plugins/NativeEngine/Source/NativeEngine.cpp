@@ -1423,7 +1423,7 @@ namespace Babylon
 
     void NativeEngine::Clear(const Napi::CallbackInfo& info)
     {
-        m_frameBufferManager.GetBound().ViewClearState.UpdateFlags(info);
+        m_frameBufferManager.ClearBoundFrameBuffer(info);
     }
 
     void NativeEngine::ClearColor(const Napi::CallbackInfo& info)

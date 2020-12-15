@@ -3,7 +3,7 @@ var turntable = false;
 var logfps = true;
 var ibl = false;
 var rtt = false;
-var vr = false;
+var vr = true;
 var ar = false;
 var xrHitTest = false;
 var xrFeaturePoints = false;
@@ -11,7 +11,7 @@ var text = false;
 var hololens = false;
 
 function CreateBoxAsync() {
-    BABYLON.Mesh.CreateBox("box1", 0.2);
+    // BABYLON.Mesh.CreateBox("box1", 0.2);
     return Promise.resolve();
 }
 
@@ -77,8 +77,30 @@ _native.whenGraphicsReady().then(function () {
         BABYLON.Tools.Log("Loaded");
 
         scene.createDefaultCamera(true);
-        scene.activeCamera.alpha += Math.PI;
+        // scene.activeCamera.alpha += Math.PI;
         CreateInputHandling(scene);
+
+
+        var plane1 = BABYLON.Mesh.CreatePlane("plane1", 1, scene);
+        plane1.position.z = 5;
+        var mat1 = new BABYLON.StandardMaterial("mat1", scene);
+        mat1.emissiveColor = BABYLON.Color3.Red();
+        plane1.material = mat1;
+        plane1.renderingGroupId = 1;
+
+        var plane2 = BABYLON.Mesh.CreatePlane("plane2", 1, scene);
+        plane2.position.z = 8;
+        var mat2 = new BABYLON.StandardMaterial("mat2", scene);
+        mat2.emissiveColor = BABYLON.Color3.Green();
+        plane2.material = mat2;
+        plane2.renderingGroupId = 0;
+
+        var plane3 = BABYLON.Mesh.CreatePlane("plane3", 1, scene);
+        plane3.position.z = 12;
+        var mat1 = new BABYLON.StandardMaterial("mat1", scene);
+        mat1.emissiveColor = BABYLON.Color3.Blue();
+        plane3.material = mat1;
+        plane3.renderingGroupId = 2;
 
         if (ibl) {
             scene.createDefaultEnvironment({ createGround: false, createSkybox: false });

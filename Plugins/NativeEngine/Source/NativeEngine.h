@@ -149,27 +149,34 @@ namespace Babylon
         void UpdateViewId(uint16_t viewId)
         {
             m_viewId = viewId;
-            Update(false);
+            Update();
+        }
+
+        bool IsCleared()
+        {
+            return m_isCleared;
+        }
+
+        void Clear()
+        {
+            // Discard any previously set state
+            bgfx::discard();
+            // Submit an empty primitive so we always clear the framebuffer on bgfx::frame,
+            // even if no other geometry is rendered to this view.
+            bgfx::touch(m_viewId);
+            m_isCleared = true;
         }
 
     private:
-
-        void Update(bool forceClear = true) const
+        void Update() const
         {
             bgfx::setViewClear(m_viewId, m_clearState.Flags, m_clearState.Color(), m_clearState.Depth, m_clearState.Stencil);
-            if (forceClear)
-            {
-                // Discard any previously set state
-                bgfx::discard();
-                // Submit an empty primitive so we always clear the framebuffer on bgfx::frame,
-                // even if no other geometry is rendered to this view.
-                bgfx::touch(m_viewId);
-            }
         }
 
         uint16_t m_viewId{};
         ClearState& m_clearState;
         arcana::weak_table<std::function<void()>>::ticket m_callbackTicket;
+        bool m_isCleared{};
     };
 
     struct FrameBufferData final
@@ -291,6 +298,16 @@ namespace Babylon
                 Bind(m_boundFrameBuffer);
             }
             return *m_boundFrameBuffer;
+        }
+
+        void ClearBoundFrameBuffer(const Napi::CallbackInfo& info)
+        {
+            if (m_boundFrameBuffer->ViewClearState.IsCleared())
+            {
+                m_boundFrameBuffer->UseViewId(GetNewViewId());
+            }
+            m_boundFrameBuffer->ViewClearState.UpdateFlags(info);
+            m_boundFrameBuffer->ViewClearState.Clear();
         }
 
         void Unbind(FrameBufferData* data)
